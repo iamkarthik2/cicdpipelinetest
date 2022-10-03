@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+#This cfn template includes all the parameters required for creation of Infrastructure stack for staffdeals application
+
+Parameters:
+  Environmentname:
+    Type: String
+    Default: Dev
+
+  ComponentName:
+    Type: String
+    Default: StaffdealsApp
+
+Conditions:
+  SydRegion: !Equals
+   - !Sub ${AWS::Region}
+   - ap-southeast-2
+
+Resources:
+
+  SSMBaseAMIID: #This parameter holds the value of the base ami
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Parameter to hold base AMI used for CICD
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/SSMPARAMETERNAMEBASEAMIID"
+      Type: String
+      Value: ami-0167e17123c6c6738
+
+  LaunchConfigSecurityGroups:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Security groups for EC2 stack
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/LaunchConfigSecurityGroups"
+      Type: String
+      Value: sg-091e37682592214a7
+# For the project add all the security groups that are required #
+
+
+  InstanceType:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Instance Type for EC2 stack
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/InstanceType"
+      Type: String
+      Value: t3.xlarge
+
+  TargetGroupHealthcheckpath:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: This contains the details of ALB Target group health check path.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupHealthcheckpath"
+      Type: String
+      Value: /
+
+  TargetGroupHealthcheckport:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: This contains the details of ALB Target group health check port.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupHealthcheckport"
+      Type: String
+      Value: 80
+
+  TargetGroupHealthcheckprotocol:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: This contains the details of ALB Target group health check protocol.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupHealthcheckprotocol"
+      Type: String
+      Value: HTTP
+
+  TargetGroupName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Name of ALB Target Group.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupName"
+      Type: String
+      Value: HTTP
+
+  TargetGroupPort:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Port of ALB Target Group.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupPort"
+      Type: String
+      Value: 80
+
+  TargetGroupProtocol:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Port of ALB Target Group.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupProtocol"
+      Type: String
+      Value: HTTP 
+
+  TargetGroupVPC:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Port of ALB Target Group.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/TargetGroupVPC"
+      Type: String
+      Value: vpc-d306ecb5
+
+  ALBScheme:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Contains ALB information if its internal or internet-facing.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ALBScheme"
+      Type: String
+      Value: internet-facing
+
+  ALBSecurityGroups:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Contains ALB security groups.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ALBSecurityGroups"
+      Type: String
+      Value: sg-091e37682592214a7
+# For the project add all the security groups that are required 
+    
+  ALBSubnets:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Contains ALB subnet details.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ALBSubnets"
+      Type: String
+      Value: "subnet-9fc28fc7,subnet-6abe7122,subnet-ff0edc99"
+# Use Project related Subnets
+
+  SDMACMCertificate:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Contains availabilityzone details for ASG.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/SDMACMCertificate"
+      Type: String
+      Value: "arn:aws:acm:ap-southeast-2:896553234455:certificate/a5d84900-3668-44e4-b290-cca11c79e212"
+
+
+
+  ASGAvailabilityzones:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Contains availabilityzone details for ASG.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGAvailabilityzones"
+      Type: String
+      Value: ap-southeast-2c
+
+  ASGZoneIdentifierSubnet:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Details of ASG Subnet.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGZoneIdentifierSubnet"
+      Type: String
+      Value: subnet-9fc28fc7
+# Use the subnet as per the project #
+
+  ASGCooldown:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: This parameter allows for ASG to wait until the instance is ready for the application after bootstrap.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGCooldown"
+      Type: String
+      Value: 3600 # In-Seconds#
+
+  ASGHealthCheckGracePeriod:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: This parameter allows for ASG to wait until the instance is ready for the application health check.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGHealthCheckGracePeriod"
+      Type: String
+      Value: 3600
+
+  ASGDesiredCapacity:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Desired number of instances required for ASG.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGDesiredCapacity"
+      Type: String
+      Value: 1
+
+  ASGHealthCheckType:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Desired number of instances required for ASG.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGHealthCheckType"
+      Type: String
+      Value: ELB
+
+  ASGMaxSize:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Max number of instances ASG can Scale to.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGMaxSize"
+      Type: String
+      Value: 1
+
+  ASGMinSize:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: Minimum number of Instances required in ASG.
+      Name: !Sub "/APP/Config/${Environmentname}/${ComponentName}/ASGMinSize"
+      Type: String
+      Value: 1

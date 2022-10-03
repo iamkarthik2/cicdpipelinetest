@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Parent stack for provisioning SDM App Infrastructure 
+
+Parameters:
+
+  TemplateLocation:
+    Type: String
+    Description: Template location path on S3
+    Default: sdmkartest
+
+
+Resources:
+
+  SSMParametersforSDMInfraStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${TemplateLocation}/SSMParameters.yml'
+
+  SDMInfrastructureStack:
+    DependsOn: 
+      - SSMParametersforSDMInfraStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${TemplateLocation}/SSMParameters.yml'

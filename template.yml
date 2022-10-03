@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RebakingPipeline
+
+Parameters:
+
+  ProjectName:
+    Type: String
+    Default: SDMPipeline
+  
+  CodePipelineName:
+    Type: String
+    Default: SDMRebakeCodeAMIPipeline
+
+  Branch:
+    Type: String
+    AllowedValues:
+      - nonprod
+      - develop
+      - master
+      - trust_build_verify
+      - Infrastrucure_build
+    Default: Infrastrucure_build_Staffdeals
+
+  Solution:
+    Type: String
+    Default: nonprod
+
+  TemplateFile:
+    Type: String
+    Description: cfn template to execute
+    Default: codepipelineforrebake.yml
+
+  SSMPARAMETERNAMEBASEAMIID:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/SSMPARAMETERNAMEBASEAMIID
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration. 
+
+  FullRepositoryID:
+    Description: Git Repository ID
+    Default: shekarka/projects
+    Type: String
+
+  CodeStarConnectionArn:
+    Description: Full Codestarconnection ARN
+    Type: String
+    Default: 
+    # Input full Codestar ARN ##
+
+  CloudFormationRole:
+    Description: A role to run Codepipeline
+    Default: CloudFormationAdminRole
+
+  CodePipelineRoleName:
+    Description: A Role to run CodePipeline
+    Default: SDMCodePipelineRole
+
+  SubscriptionProtocol:
+    Type: String
+    Description: The subscription protocol.
+    Default: email
+
+  SubscriptionEndPoint:
+    Type: String
+    Description: Endpoint that receives notification
+    Default: karthik.shekar@cba.com.au
+
+
+Resources:
+
+###  This is the resource definition for creation of function to monitor latest AMI and kick off Codepipeline ###
+  DetectNewBaseAMIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/check_if_new_base_ami_released.lambda_handler
+      Runtime: python3.7
+      Timeout: 300
+      MemorySize: 128
+      Events:
+        CloudWatchEventsSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(0 0 0/1 1/1 * ? *)'
+            Name: !Join ['-', [ 'Check-if-new-base-ami-released-', !Ref 'AWS::StackName' ]]
+            Description: Check if a new base ami matching our filter pattern has been released by AWS
+            Enabled: True
+      Environment:
+        Variables:
+          REGION: !Ref 'AWS::Region'
+          SSM_PARAMETER_NAME_BASE_AMI_ID: !Ref SSMPARAMETERNAMEBASEAMIID
+          CODEPIPELINE_PIPELINE_NAME: !Ref CodePipelineName
+      Policies:
+      - Statement:
+        - Sid: ReadUpdateSSMParameterStoreValues
+          Effect: Allow
+          Action:
+          - ssm:PutParameter
+          - ssm:DeleteParameter
+          - ssm:GetParameterHistory
+          - ssm:GetParametersByPath
+          - ssm:GetParameters
+          - ssm:GetParameter
+          - ssm:DeleteParameters
+          Resource: !Join [ '', [ 'arn:aws:ssm:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':parameter/', !Ref ProjectName, '/*' ] ]
+        - Sid: StartCodePipelinePipelineExecution
+          Effect: Allow
+          Action:
+          - codepipeline:StartPipelineExecution
+          Resource: !Join ['', ['arn:aws:codepipeline:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':', !Ref CodePipelineName ]]
+        - Sid: CheckLatestAWSAmis
+          Effect: Allow
+          Action:
+          - ec2:DescribeImages
+          Resource: '*'
+
+
+###  This is the resource definition for creation of CodePipeline ###
+  SDMRebakeCodeAMIPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: SDMRebakeCodeAMIPipeline
+      RoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${CodePipelineRoleName}'
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceCodeRepo
+              Namespace: SourceVariables
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeStarSourceConnection
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnectionArn
+                FullRepositoryId: !Ref FullRepositoryId
+              RunOrder: 1 
+
+        - Name: Deploy
+          Actions: 
+            - Name: CodeDeploy-Changeset
+              InputArtifacts:
+                - Name: code-BuildArtifact
+              ActionTypeId:
+                Category: Deploy 
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !Sub 'arn:aws:iam::${AWS::AccountID}:role/${CloudFormationRole}'
+                Capabilities: CAPABILITY_NAMED_IAM
+                StackName: InfrastructureStackSDM
+                TemplatePath: !Sub TemplateFile
+              RunOrder: 1

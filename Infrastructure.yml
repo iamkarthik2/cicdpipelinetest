@@ -1,0 +1,221 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: SDMInfraStack
+## This template includes the resource definition for EC2 infrastructure for SDM ##
+
+Parameters:
+  SSMPARAMETERNAMEBASEAMIID:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/SSMPARAMETERNAMEBASEAMIID
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  LaunchConfigSecurityGroups:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/LaunchConfigSecurityGroups
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  InstanceType:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/InstanceType
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupHealthcheckpath:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupHealthcheckpath
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupHealthcheckport:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupHealthcheckport
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupHealthcheckprotocol:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupHealthcheckprotocol
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupName
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupPort:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupPort
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupProtocol:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupProtocol
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  TargetGroupVPC:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/TargetGroupVPC
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ALBScheme:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ALBScheme
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ALBSecurityGroups:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ALBSecurityGroups
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ALBSubnets:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ALBSubnets
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGAvailabilityzones:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGAvailabilityzones
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGZoneIdentifierSubnet:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGZoneIdentifierSubnet
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGCooldown:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGCooldown
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGHealthCheckGracePeriod:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGHealthCheckGracePeriod
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGDesiredCapacity:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGDesiredCapacity
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGHealthCheckType:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGHealthCheckType
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGMaxSize:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGMaxSize
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  ASGMinSize:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/ASGMinSize
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+  SDMACMCertificate:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /APP/Config/Dev/StaffdealsApp/SDMACMCertificate
+    Description: Base AMI Used for EC2 instance and Austoscaling Launch Configuration.
+
+
+Resources:
+## This Section includes resource definition for Web Applicaton Stack (AutoScaling Group, Application Load Balancer and Ec2) ##
+  SDMLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    UpdatePolicy:
+       AutoScalingReplacingUpdate:
+         WillReplace: true
+    DeletionPolicy: Retain
+    Properties:
+      ImageId: !Ref SSMPARAMETERNAMEBASEAMIID
+      SecurityGroups: 
+        - !Ref LaunchConfigSecurityGroups
+      InstanceType: !Ref InstanceType
+      UserData:
+        Fn::Base64:
+          !Sub |
+            <powershell>
+            Install-WindowsFeature -name Web-Server -IncludeManagementTools -IncludeAllSubFeature
+            </powershell>
+
+  SDMTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: !Ref TargetGroupHealthcheckpath
+      HealthCheckPort: !Ref TargetGroupHealthcheckport
+      HealthCheckProtocol: !Ref TargetGroupHealthcheckprotocol
+      Name: !Ref TargetGroupName
+      Port: !Ref TargetGroupPort
+      Protocol: !Ref TargetGroupProtocol
+      VpcId: !Ref TargetGroupVPC
+
+  SDMLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: 'false'
+        - Key: idle_timeout.timeout_seconds
+          Value: '600'
+        - Key: deletion_protection.enabled
+          Value: 'false'
+        - Key: routing.http2.enabled
+          Value: 'true'
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: 'false'
+      Scheme: !Ref ALBScheme
+      SecurityGroups: 
+        - !Ref ALBSecurityGroups
+      Subnets: 
+        - subnet-9fc28fc7
+        - subnet-6abe7122
+        - subnet-ff0edc99
+
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref SDMTargetGroup
+      LoadBalancerArn: !Ref SDMLoadBalancer
+      Certificates:
+        - CertificateArn: !Ref SDMACMCertificate
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-2016-08
+  
+  HTTPListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Order: 1
+          RedirectConfig:
+            Host: '#{host}'
+            Path: '/#{path}'
+            Port: '443'
+            Protocol: HTTPS
+            Query: '#{query}'
+            StatusCode: HTTP_301
+          Type: redirect
+      LoadBalancerArn: !Ref SDMLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  SDMAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy:
+       AutoScalingReplacingUpdate:
+         WillReplace: true
+    DependsOn:
+      - SDMLoadBalancer
+      - SDMTargetGroup
+    Properties:
+      AvailabilityZones: 
+        - !Ref ASGAvailabilityzones
+      VPCZoneIdentifier:
+        - !Ref ASGZoneIdentifierSubnet
+      Cooldown: !Ref ASGCooldown
+      HealthCheckGracePeriod: !Ref ASGHealthCheckGracePeriod
+      DesiredCapacity: !Ref ASGDesiredCapacity
+      HealthCheckType: !Ref ASGHealthCheckType
+      LaunchConfigurationName: !Ref SDMLaunchConfiguration
+      MaxSize: !Ref ASGMaxSize
+      MinSize: !Ref ASGMinSize
+      TargetGroupARNs:
+        - !Ref SDMTargetGroup
